@@ -499,7 +499,7 @@
     </script>
 
     <!-- Lab 6: AJAX polling (30s) for stats, low stock and recent movements -->
-    <script src="{{ asset('js/inventory-live.js') }}" defer></script>
+    <script src="{{ asset('js/inventory-live.js') }}?v={{ filemtime(public_path('js/inventory-live.js')) }}" defer></script>
 
     <!-- Lab 7: refresh every procurement widget from its JSON endpoint -->
     <script>

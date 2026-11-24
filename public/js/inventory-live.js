@@ -6,10 +6,12 @@
     'use strict';
 
     var POLL_MS = 30000;
+    var scriptUrl = document.currentScript ? document.currentScript.src : '';
+    var basePath = scriptUrl.replace(/\/js\/inventory-live\.js.*$/, '');
     var endpoints = {
-        stats: '/api/dashboard/stats',
-        lowStock: '/api/products/low-stock',
-        recent: '/api/transactions/recent'
+        stats: basePath + '/api/dashboard/stats',
+        lowStock: basePath + '/api/products/low-stock',
+        recent: basePath + '/api/transactions/recent'
     };
 
     function escapeHtml(value) {

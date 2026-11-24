@@ -8,6 +8,13 @@
             'notes' => $item->notes,
         ])->all()
         : []);
+    $productPayload = $products->map(fn ($product) => [
+        'id' => $product->id,
+        'supplier_id' => $product->supplier_id,
+        'name' => $product->name,
+        'sku' => $product->sku,
+        'price' => (float) $product->unit_price,
+    ])->values()->all();
 @endphp
 
 <div class="row g-3">
@@ -108,13 +115,7 @@
 @push('scripts')
 <script>
 (function () {
-    const products = @json($products->map(fn ($p) => [
-        'id' => $p->id,
-        'supplier_id' => $p->supplier_id,
-        'name' => $p->name,
-        'sku' => $p->sku,
-        'price' => (float) $p->unit_price,
-    ])->values());
+    const products = @json($productPayload);
     const initialItems = @json($lineItems);
     const supplierSelect = document.getElementById('supplier_id');
     const body = document.getElementById('items-body');

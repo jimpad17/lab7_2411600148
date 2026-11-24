@@ -7,10 +7,8 @@
 @endsection
 
 @section('content')
-    <!-- Filters: server-side version of the Lab 4 filter toolbar -->
-    <div class="card mb-4 shadow-sm bg-white p-2">
-        <div class="card-body">
-            <form method="GET" action="{{ route('products.index') }}" class="row g-3 align-items-end">
+    <!-- Lab 7: shared filter toolbar component -->
+    <x-filter-card action="{{ route('products.index') }}">
                 <div class="col-md-2">
                     <label class="form-label small fw-bold text-muted mb-1">Brand</label>
                     <select name="brand_id" class="form-select">
@@ -26,6 +24,15 @@
                         <option value="">All Categories</option>
                         @foreach ($categories as $category)
                             <option value="{{ $category->id }}" {{ (string) ($filters['category_id'] ?? '') === (string) $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted mb-1">Supplier</label>
+                    <select name="supplier_id" class="form-select">
+                        <option value="">All Suppliers</option>
+                        @foreach ($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}" {{ (string) ($filters['supplier_id'] ?? '') === (string) $supplier->id ? 'selected' : '' }}>{{ $supplier->company_name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -49,7 +56,7 @@
                     <input type="number" name="max_quantity" class="form-control" min="0" value="{{ $filters['max_quantity'] ?? '' }}">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label small fw-bold text-muted mb-1">Search (name, SKU or brand)</label>
+                    <label class="form-label small fw-bold text-muted mb-1">Search (name, SKU, brand or supplier)</label>
                     <div class="input-group">
                         <input type="text" name="search" class="form-control" placeholder="Search products..." value="{{ $filters['search'] ?? '' }}">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
@@ -62,17 +69,19 @@
                             <i class="bi bi-plus-circle me-1"></i> Add Product
                         </a>
                     @endif
-                    <a href="{{ route('products.export', request()->only(['brand_id', 'category_id', 'status', 'min_quantity', 'max_quantity', 'search'])) }}"
+                    <a href="{{ route('products.export', request()->only(['brand_id', 'category_id', 'supplier_id', 'status', 'min_quantity', 'max_quantity', 'search'])) }}"
                        class="btn btn-primary btn-sm px-3">
                         <i class="bi bi-download me-1"></i> Export CSV
+                    </a>
+                    <a href="{{ route('products.export-pdf', request()->only(['brand_id', 'category_id', 'supplier_id', 'status', 'min_quantity', 'max_quantity', 'search'])) }}"
+                       class="btn btn-outline-danger btn-sm px-3">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
                     </a>
                     <a href="{{ route('inventory.index') }}" class="btn btn-outline-warning btn-sm px-3">
                         <i class="bi bi-clipboard-data me-1"></i> Stock Overview
                     </a>
                 </div>
-            </form>
-        </div>
-    </div>
+    </x-filter-card>
 
     <div class="card shadow-sm">
         <div class="card-header bg-white pt-3 pb-2 d-flex justify-content-between align-items-center border-bottom-0">

@@ -5,16 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'action', 'module', 'description', 'ip_address'];
+    protected $fillable = [
+        'user_id',
+        'action',
+        'module',
+        'description',
+        'ip_address',
+        'subject_type',
+        'subject_id',
+    ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Lab 7: logs can point at any model (e.g. a PurchaseOrder). */
+    public function subject(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function scopeToday($query)

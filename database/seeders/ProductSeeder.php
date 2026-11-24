@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
@@ -18,6 +19,7 @@ class ProductSeeder extends Seeder
     {
         $brandIds = Brand::pluck('id', 'name');
         $categoryIds = Category::pluck('id', 'name');
+        $supplierIds = Supplier::pluck('id', 'company_name');
 
         $products = [
             ['name' => 'Adjustable Dumbbell Set 20kg', 'sku' => 'JT-EQP-001', 'brand' => 'Ironbulk', 'category' => 'Equipment', 'quantity' => 12, 'reorder_level' => 5, 'unit_price' => 12500, 'supplier' => 'Ironbulk Supply', 'description' => 'Space-saving adjustable dumbbells for strength training.'],
@@ -52,6 +54,7 @@ class ProductSeeder extends Seeder
 
             $product['brand_id'] = $brandIds[$brandName];
             $product['category_id'] = $categoryIds[$categoryName];
+            $product['supplier_id'] = $supplierIds[$product['supplier']] ?? null;
             $product['is_active'] ??= true;
 
             Product::updateOrCreate(['sku' => $product['sku']], $product);

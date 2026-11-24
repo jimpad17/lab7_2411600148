@@ -70,6 +70,18 @@
         <small class="text-muted">Last updated: <strong id="last-updated" class="text-dark">{{ now()->format('M d, Y h:i A') }}</strong></small>
     </div>
 
+    {{-- Lab 7: procurement widgets bound automatically by View Composers --}}
+    <h5 class="fw-bold mb-3 mt-4">
+        <i class="bi bi-truck text-warning me-2"></i> Procurement Overview
+        <small class="text-muted fw-normal ms-2">View Composer widgets · refreshed from the widget API</small>
+    </h5>
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">@include('widgets.pending-orders')</div>
+        <div class="col-xl-3 col-md-6 mb-3">@include('widgets.recent-orders')</div>
+        <div class="col-xl-3 col-md-6 mb-3">@include('widgets.supplier-performance')</div>
+        <div class="col-xl-3 col-md-6 mb-3">@include('widgets.reorder-alerts')</div>
+    </div>
+
     <!-- Visualizations: same Chart.js approach as Lab 4, now driven by Eloquent data -->
     <div class="row mb-4">
         <div class="col-lg-4 mb-3">
@@ -488,4 +500,122 @@
 
     <!-- Lab 6: AJAX polling (30s) for stats, low stock and recent movements -->
     <script src="{{ asset('js/inventory-live.js') }}" defer></script>
+
+    <!-- Lab 7: refresh every procurement widget from its JSON endpoint -->
+    <script>
+        (function () {
+            const headers = { 'Accept': 'application/json' };
+            const money = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+
+            async function refresh(endpoint, callback) {
+                try {
+                    const response = await fetch(endpoint, { headers, credentials: 'same-origin' });
+                    if (response.ok) callback(await response.json());
+                } catch (error) {
+                    console.warn('Widget refresh failed:', error);
+                }
+            }
+
+            function reset(element, message) {
+                element.replaceChildren();
+                const row = document.createElement('li');
+                row.className = 'list-group-item text-muted px-3';
+                row.textContent = message;
+                element.appendChild(row);
+            }
+
+            function renderRecentOrders(orders) {
+                const body = document.getElementById('recent-orders-body');
+                if (!body) return;
+
+                body.replaceChildren();
+                if (!orders.length) {
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.colSpan = 4;
+                    cell.className = 'text-muted text-center py-3';
+                    cell.textContent = 'No purchase orders yet.';
+                    row.appendChild(cell);
+                    body.appendChild(row);
+                    return;
+                }
+
+                orders.forEach(function (order) {
+                    const row = document.createElement('tr');
+
+                    const reference = document.createElement('td');
+                    reference.className = 'ps-3';
+                    const link = document.createElement('a');
+                    link.href = order.url;
+                    link.className = 'text-decoration-none fw-bold';
+                    link.textContent = order.reference_number;
+                    reference.appendChild(link);
+
+                    const supplier = document.createElement('td');
+                    supplier.textContent = order.supplier || '—';
+
+                    const status = document.createElement('td');
+                    const badge = document.createElement('span');
+                    badge.className = 'badge ' + (order.status_badge || 'bg-secondary');
+                    badge.textContent = order.status_label;
+                    status.appendChild(badge);
+
+                    const total = document.createElement('td');
+                    total.className = 'text-end pe-3';
+                    total.textContent = money.format(order.total || 0);
+
+                    row.append(reference, supplier, status, total);
+                    body.appendChild(row);
+                });
+            }
+
+            function renderSupplierPerformance(suppliers) {
+                const list = document.getElementById('supplier-performance-list');
+                if (!list) return;
+
+                list.replaceChildren();
+                if (!suppliers.length) {
+                    reset(list, 'No supplier delivery data yet.');
+                    return;
+                }
+
+                suppliers.forEach(function (supplier, index) {
+                    const row = document.createElement('li');
+                    row.className = 'list-group-item d-flex justify-content-between align-items-center px-3';
+
+                    const name = document.createElement('span');
+                    const rank = document.createElement('span');
+                    rank.className = 'badge bg-warning text-dark me-2';
+                    rank.textContent = '#' + (index + 1);
+                    name.append(rank, document.createTextNode(supplier.company_name));
+
+                    const rate = document.createElement('span');
+                    rate.className = 'fw-bold ' + (supplier.on_time_rate >= 90 ? 'text-success' : 'text-warning');
+                    rate.textContent = supplier.on_time_rate + '%';
+
+                    row.append(name, rate);
+                    list.appendChild(row);
+                });
+            }
+
+            function refreshAll() {
+                refresh('{{ route('api.dashboard.pending-orders') }}', function (payload) {
+                    const count = document.getElementById('pending-count');
+                    if (count) count.textContent = payload.count ?? 0;
+                });
+                refresh('{{ route('api.dashboard.recent-orders') }}', function (payload) {
+                    renderRecentOrders(payload.data || []);
+                });
+                refresh('{{ route('api.dashboard.supplier-performance') }}', function (payload) {
+                    renderSupplierPerformance(payload.data || []);
+                });
+                refresh('{{ route('api.dashboard.reorder-alerts') }}', function (payload) {
+                    const badge = document.querySelector('#widget-reorder-alerts .badge');
+                    if (badge) badge.textContent = payload.count ?? 0;
+                });
+            }
+
+            setInterval(refreshAll, 60000);
+        })();
+    </script>
 @endpush

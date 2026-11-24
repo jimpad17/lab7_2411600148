@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\InsufficientStockException;
+use App\Exports\InventoryTransactionsExport;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Rules\SufficientStock;
 use App\Services\ActivityLogger;
+use App\Services\SearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -21,14 +23,20 @@ class InventoryTransactionController extends Controller
             'reference' => '', 'include_reversed' => false,
         ], $request->only(['product_id', 'type', 'from', 'to', 'reference', 'include_reversed']));
 
-        $transactions = InventoryTransaction::query()
-            ->with(['product', 'user'])
-            ->when($request->filled('product_id'), fn ($q) => $q->where('product_id', $request->integer('product_id')))
-            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
-            ->when($request->filled('reference'), fn ($q) => $q->where('reference_number', 'like', '%'.strip_tags($request->string('reference')).'%'))
-            ->when(! $request->boolean('include_reversed'), fn ($q) => $q->notReversed())
-            ->betweenDates($request->input('from'), $request->input('to'))
-            ->recent()
+        // Lab 7: the same SearchService powers the page and both exports, so a
+        // filtered table always downloads exactly the rows being displayed.
+        $searchFilters = [
+            'product_id' => $filters['product_id'],
+            'type' => $filters['type'],
+            'user_id' => $request->input('user_id'),
+            'from' => $filters['from'],
+            'to' => $filters['to'],
+            'search' => $filters['reference'],
+            'include_reversed' => $filters['include_reversed'],
+        ];
+
+        $transactions = app(SearchService::class)
+            ->transactions($searchFilters)
             ->paginate(20)
             ->withQueryString();
 
@@ -164,5 +172,30 @@ class InventoryTransactionController extends Controller
 
         return redirect()->route('transactions.index')
             ->with('success', "Transaction #{$transaction->id} was reversed. The audit record was kept.");
+    }
+
+    /** Lab 7: filtered stock-movement exports. */
+    public function exportCsv(Request $request, InventoryTransactionsExport $exports)
+    {
+        return $exports->withFilters($this->exportFilters($request))->csv();
+    }
+
+    public function exportPdf(Request $request, InventoryTransactionsExport $exports)
+    {
+        return $exports->withFilters($this->exportFilters($request))->pdf();
+    }
+
+    /** @return array<string, mixed> */
+    private function exportFilters(Request $request): array
+    {
+        return [
+            'product_id' => $request->input('product_id'),
+            'type' => $request->input('type'),
+            'user_id' => $request->input('user_id'),
+            'from' => $request->input('from'),
+            'to' => $request->input('to'),
+            'search' => $request->input('reference', $request->input('search')),
+            'include_reversed' => $request->boolean('include_reversed'),
+        ];
     }
 }

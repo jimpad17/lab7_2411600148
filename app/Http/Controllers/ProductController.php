@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ProductsExport;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Services\ActivityLogger;
@@ -75,7 +76,8 @@ class ProductController extends Controller
             'products' => $this->filtered($request)->with(['brand', 'category'])->paginate(10)->withQueryString(),
             'brands' => \App\Models\Brand::orderBy('name')->get(),
             'categories' => \App\Models\Category::orderBy('name')->get(),
-            'filters' => $request->only(['brand_id', 'category_id', 'status', 'min_quantity', 'max_quantity', 'search']),
+            'suppliers' => \App\Models\Supplier::active()->orderBy('company_name')->get(),
+            'filters' => $request->only(['brand_id', 'category_id', 'supplier_id', 'status', 'min_quantity', 'max_quantity', 'search']),
         ]);
     }
 
@@ -205,44 +207,18 @@ class ProductController extends Controller
             ->with('success', "Product '{$product->name}' was restored to active inventory.");
     }
 
-    /**
-     * Inventory CSV export - server-side version of Lab 4's download feature.
-     */
-    public function exportCsv(Request $request)
+    /** Lab 7: CSV/PDF exports are delegated to the ProductsExport class. */
+    public function exportCsv(Request $request, ProductsExport $exports)
     {
-        $products = $this->filtered($request)->with(['brand', 'category'])->get();
-        $filename = 'jimtrack-inventory-'.now()->format('Y-m-d').'.csv';
+        return $exports->withFilters($request->only([
+            'brand_id', 'category_id', 'supplier_id', 'status', 'min_quantity', 'max_quantity', 'search',
+        ]))->csv();
+    }
 
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate',
-        ];
-
-        $callback = function () use ($products) {
-            $handle = fopen('php://output', 'w');
-
-            fputcsv($handle, ['SKU', 'Product Name', 'Brand', 'Category', 'Description', 'Quantity', 'Reorder Level', 'Unit Price', 'Status', 'Supplier', 'Stock Value']);
-
-            foreach ($products as $product) {
-                fputcsv($handle, [
-                    $product->sku,
-                    $product->name,
-                    $product->brand?->name ?? '',
-                    $product->category?->name ?? '',
-                    $product->description,
-                    $product->quantity,
-                    $product->reorder_level,
-                    $product->unit_price,
-                    $product->stock_status,
-                    $product->supplier,
-                    number_format($product->stock_value, 2, '.', ''),
-                ]);
-            }
-
-            fclose($handle);
-        };
-
-        return response()->stream($callback, 200, $headers);
+    public function exportPdf(Request $request, ProductsExport $exports)
+    {
+        return $exports->withFilters($request->only([
+            'brand_id', 'category_id', 'supplier_id', 'status', 'min_quantity', 'max_quantity', 'search',
+        ]))->pdf();
     }
 }

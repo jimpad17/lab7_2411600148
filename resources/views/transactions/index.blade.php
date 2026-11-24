@@ -10,6 +10,14 @@
     <a href="{{ route('transactions.create') }}" class="btn btn-success btn-sm px-3">
         <i class="bi bi-plus-circle me-1"></i> Record Movement
     </a>
+    <a href="{{ route('transactions.export', request()->only(['product_id', 'type', 'from', 'to', 'reference', 'include_reversed'])) }}"
+       class="btn btn-outline-primary btn-sm px-3">
+        <i class="bi bi-file-earmark-excel me-1"></i> CSV
+    </a>
+    <a href="{{ route('transactions.export-pdf', request()->only(['product_id', 'type', 'from', 'to', 'reference', 'include_reversed'])) }}"
+       class="btn btn-outline-danger btn-sm px-3">
+        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+    </a>
     @if (Auth::user()->isAdmin())
         <a href="{{ route('adjustments.create') }}" class="btn btn-outline-warning btn-sm px-3">
             <i class="bi bi-sliders2 me-1"></i> Adjust Count
@@ -60,9 +68,8 @@
         </div>
     </div>
 
-    <div class="card mb-4 shadow-sm bg-white p-2">
-        <div class="card-body">
-            <form method="GET" action="{{ route('transactions.index') }}" class="row g-3 align-items-end">
+    <!-- Lab 7: shared filter toolbar component -->
+    <x-filter-card action="{{ route('transactions.index') }}">
                 <div class="col-md-3">
                     <label class="form-label small fw-bold text-muted mb-1">Product</label>
                     <select name="product_id" class="form-select form-select-sm">
@@ -107,9 +114,7 @@
                         <label class="form-check-label text-muted" for="includeReversed">Include reversed transactions</label>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
+    </x-filter-card>
 
     <div class="card shadow-sm">
         <div class="card-header bg-white pt-3 border-bottom-0 d-flex justify-content-between align-items-center flex-wrap gap-2">

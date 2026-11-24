@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['admin', 'staff'])->default('staff')->after('email');
+            // Lab 7 roles are included here so fresh test databases accept the
+            // manager/warehouse accounts seeded by UserSeeder.
+            $table->enum('role', ['admin', 'manager', 'warehouse', 'staff'])->default('staff')->after('email');
             $table->boolean('is_active')->default(true)->after('role');
         });
     }

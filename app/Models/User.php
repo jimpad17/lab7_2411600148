@@ -70,6 +70,62 @@ class User extends Authenticatable
         return $this->role === 'admin' && $this->is_active;
     }
 
+    /** Lab 7: managers are the first approval level for purchase orders. */
+    public function isManager(): bool
+    {
+        return $this->role === 'manager' && $this->is_active;
+    }
+
+    public function isWarehouse(): bool
+    {
+        return $this->role === 'warehouse' && $this->is_active;
+    }
+
+    public function canApprovePurchaseOrders(): bool
+    {
+        return $this->isAdmin() || $this->isManager();
+    }
+
+    public function canReceivePurchaseOrders(): bool
+    {
+        return $this->isAdmin() || $this->isWarehouse();
+    }
+
+    public function getRoleLabelAttribute(): string
+    {
+        return match ($this->role) {
+            'admin' => 'Administrator',
+            'manager' => 'Manager',
+            'warehouse' => 'Warehouse Staff',
+            default => 'Staff',
+        };
+    }
+
+    public function createdPurchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class, 'user_id');
+    }
+
+    public function approvedPurchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class, 'approved_by');
+    }
+
+    public function purchaseOrderApprovals()
+    {
+        return $this->hasMany(PurchaseOrderApproval::class);
+    }
+
+    public static function roleOptions(): array
+    {
+        return [
+            'admin' => 'Administrator',
+            'manager' => 'Manager',
+            'warehouse' => 'Warehouse Staff',
+            'staff' => 'Staff',
+        ];
+    }
+
     /**
      * This account is intentionally protected from deactivation/deletion.
      */

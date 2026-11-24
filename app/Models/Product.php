@@ -24,6 +24,10 @@ class Product extends Model
         'reorder_level',
         'unit_price',
         'supplier',
+        'supplier_id',
+        'package_size',
+        'daily_usage_override',
+        'safety_stock_override',
         'is_active',
         'low_stock_notified_at',
         'stockout_notified_at',
@@ -33,6 +37,10 @@ class Product extends Model
         'quantity' => 'integer',
         'reorder_level' => 'integer',
         'unit_price' => 'decimal:2',
+        'supplier_id' => 'integer',
+        'package_size' => 'integer',
+        'daily_usage_override' => 'decimal:2',
+        'safety_stock_override' => 'integer',
         'is_active' => 'boolean',
         'low_stock_notified_at' => 'datetime',
         'stockout_notified_at' => 'datetime',
@@ -46,6 +54,27 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Lab 7: structured supplier relationship. Named `supplierRecord` because
+     * the legacy `supplier` text column would otherwise shadow the relation
+     * when accessing `$product->supplier`.
+     */
+    public function supplierRecord(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id')->withTrashed();
+    }
+
+    /** Backwards-compatible alias for relationship queries such as whereHas. */
+    public function supplier(): BelongsTo
+    {
+        return $this->supplierRecord();
+    }
+
+    public function purchaseOrderItems(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
     }
 
     /**
@@ -138,10 +167,11 @@ class Product extends Model
             $term = '%'.strip_tags((string) $filters['search']).'%';
 
             $query->where(function ($q) use ($term) {
-                $q->where('name', 'like', $term)
-                    ->orWhere('sku', 'like', $term)
+                $q->where('products.name', 'like', $term)
+                    ->orWhere('products.sku', 'like', $term)
+                    ->orWhere('products.supplier', 'like', $term)
                     ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', $term))
-                    ->orWhere('supplier', 'like', $term);
+                    ->orWhereHas('supplier', fn ($s) => $s->where('company_name', 'like', $term));
             });
         }
 

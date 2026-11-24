@@ -31,6 +31,7 @@
                         \App\Notifications\LowStockNotification::class,
                         \App\Notifications\StockOutNotification::class,
                         \App\Notifications\OrderApprovedNotification::class,
+                        \App\Notifications\PurchaseOrderNotification::class,
                     ];
                     $unreadAlertsCount = Auth::user()->unreadNotifications()
                         ->whereIn('type', $alertTypes)->count();
@@ -134,9 +135,14 @@
                                 $isAdmin ? ['users.index', 'Users', 'bi-people', 'users*'] : null,
                                 ['product-report', 'Product Report', 'bi-file-bar-graph', 'product-report*'],
                             ])],
+                            ['label' => 'Procurement (Lab 7)', 'items' => array_filter([
+                                ['purchase-orders.index', 'Purchase Orders', 'bi-cart-plus', 'purchase-orders.*'],
+                                $isAdmin ? ['suppliers.index', 'Suppliers', 'bi-truck', 'suppliers.index*'] : null,
+                                ['suppliers.performance', 'Supplier Performance', 'bi-graph-up', 'suppliers.performance*'],
+                            ])],
                             ['label' => 'Orders', 'items' => [
                                 ['sales-orders', 'Sales Order', 'bi-cart-check', 'sales-orders*'],
-                                ['purchase-orders', 'Purchase Order', 'bi-cart-plus', 'purchase-orders*'],
+                                ['purchase-orders', 'Purchase Requests', 'bi-clipboard-check', 'purchase-orders'],
                             ]],
                             ['label' => 'Records', 'items' => array_filter([
                                 $isAdmin ? ['receipts.index', 'Receipt', 'bi-receipt', 'receipts*'] : null,

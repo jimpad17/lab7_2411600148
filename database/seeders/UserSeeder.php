@@ -37,6 +37,20 @@ class UserSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'email' => 'manager@jimtrack.local',
+                'name' => 'Mia Manager',
+                'password' => 'MANAGER123',
+                'role' => 'manager',
+                'is_active' => true,
+            ],
+            [
+                'email' => 'warehouse@jimtrack.local',
+                'name' => 'Wally Warehouse',
+                'password' => 'WAREHOUSE123',
+                'role' => 'warehouse',
+                'is_active' => true,
+            ],
+            [
                 'email' => 'test@jimtrack.local',
                 'name' => 'Test User',
                 'password' => 'STAFF123',

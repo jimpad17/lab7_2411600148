@@ -12,8 +12,11 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockAdjustmentController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierPerformanceController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\LogActivity;
@@ -42,6 +45,8 @@ Route::middleware(['auth', EnsureUserIsActive::class, LogActivity::class])->grou
     Route::get('inventory-transactions', [InventoryTransactionController::class, 'index'])->name('transactions.index');
     Route::get('inventory-transactions/create', [InventoryTransactionController::class, 'create'])->name('transactions.create');
     Route::post('inventory-transactions', [InventoryTransactionController::class, 'store'])->name('transactions.store');
+    Route::get('inventory-transactions/export/csv', [InventoryTransactionController::class, 'exportCsv'])->name('transactions.export');
+    Route::get('inventory-transactions/export/pdf', [InventoryTransactionController::class, 'exportPdf'])->name('transactions.export-pdf');
     Route::get('inventory-transactions/{transaction}', [InventoryTransactionController::class, 'show'])->name('transactions.show')->whereNumber('transaction');
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -51,7 +56,9 @@ Route::middleware(['auth', EnsureUserIsActive::class, LogActivity::class])->grou
     /* Purchase / sales orders: staff submit, admins review and approve. */
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('sales-orders', [OrderController::class, 'sales'])->name('sales-orders');
-    Route::get('purchase-orders', [OrderController::class, 'purchase'])->name('purchase-orders');
+    // Legacy route name kept for Lab 6 bookmarks/tests; the Lab 7 purchase
+    // order module uses the `purchase-orders.*` names below.
+    Route::get('orders/purchase', [OrderController::class, 'purchase'])->name('purchase-orders');
     Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
     Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->whereNumber('order');
@@ -70,10 +77,36 @@ Route::middleware(['auth', EnsureUserIsActive::class, LogActivity::class])->grou
 
     Route::get('products', [ProductController::class, 'index'])->name('products.index');
     Route::get('products/export/csv', [ProductController::class, 'exportCsv'])->name('products.export');
+    Route::get('products/export/pdf', [ProductController::class, 'exportPdf'])->name('products.export-pdf');
     Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show')->whereNumber('product');
 
     Route::get('brands', [BrandController::class, 'index'])->name('brands.index');
     Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+
+    /*
+     * Lab 7 - Supplier Management, Purchase Orders and Procurement reporting.
+     * Read access is shared; mutations are protected by Policies/Gates in the
+     * controllers and by the `admin` middleware for supplier master data.
+     */
+    Route::get('suppliers/performance', [SupplierPerformanceController::class, 'index'])->name('suppliers.performance');
+    Route::get('suppliers/performance/export/csv', [SupplierPerformanceController::class, 'exportCsv'])->name('suppliers.performance.export');
+    Route::get('suppliers/performance/export/pdf', [SupplierPerformanceController::class, 'exportPdf'])->name('suppliers.performance.export-pdf');
+    Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show')->whereNumber('supplier');
+
+    Route::get('purchase-orders/export/csv', [PurchaseOrderController::class, 'exportCsv'])->name('purchase-orders.export');
+    Route::get('purchase-orders/export/pdf', [PurchaseOrderController::class, 'exportPdf'])->name('purchase-orders.export-pdf');
+    Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('purchase-orders/create', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+    Route::post('purchase-orders', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+    Route::get('purchase-orders/{order}/edit', [PurchaseOrderController::class, 'edit'])->name('purchase-orders.edit')->whereNumber('order');
+    Route::get('purchase-orders/{order}', [PurchaseOrderController::class, 'show'])->name('purchase-orders.show')->whereNumber('order');
+    Route::put('purchase-orders/{order}', [PurchaseOrderController::class, 'update'])->name('purchase-orders.update')->whereNumber('order');
+    Route::delete('purchase-orders/{order}', [PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy')->whereNumber('order');
+    Route::post('purchase-orders/{order}/approve', [PurchaseOrderController::class, 'approve'])->name('purchase-orders.approve')->whereNumber('order');
+    Route::post('purchase-orders/{order}/reject', [PurchaseOrderController::class, 'reject'])->name('purchase-orders.reject')->whereNumber('order');
+    Route::post('purchase-orders/{order}/send', [PurchaseOrderController::class, 'send'])->name('purchase-orders.send')->whereNumber('order');
+    Route::post('purchase-orders/{order}/receive', [PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive')->whereNumber('order');
 
     /*
      * Admin-only: master-data changes, people, money valuation and the
@@ -103,6 +136,14 @@ Route::middleware(['auth', EnsureUserIsActive::class, LogActivity::class])->grou
         Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         Route::post('categories/{category}/restore', [CategoryController::class, 'restore'])->name('categories.restore');
+
+        // Lab 7 - supplier master data (soft deletes + restore)
+        Route::get('suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+        Route::post('suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+        Route::get('suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit')->whereNumber('supplier');
+        Route::put('suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update')->whereNumber('supplier');
+        Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy')->whereNumber('supplier');
+        Route::post('suppliers/{supplier}/restore', [SupplierController::class, 'restore'])->name('suppliers.restore')->whereNumber('supplier');
 
         // Users
         Route::get('users', [UserController::class, 'index'])->name('users.index');

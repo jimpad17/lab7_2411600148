@@ -1,0 +1,28 @@
+LAB 7 - SHORT ANSWERS
+
+1. Soft Deletes
+Soft deletes mark a record with deleted_at instead of removing it. Supplier uses the SoftDeletes trait; delete is blocked while open POs exist, and restore uses withTrashed()->restore(). This keeps historical orders valid and preserves the audit trail.
+
+2. Gates vs Policies
+Gates are simple closures; Policies are classes for one model. I used PurchaseOrderPolicy with $this->authorize(). Managers approve normal POs, admins approve high-value POs (P50,000+), warehouse/admin receive, creator/admin edit drafts, and only admin deletes drafts.
+
+3. Multi-level Approval
+High-value orders need a second approval. In requires_second_approval, managers can reject but only admins can approve; admins can approve all pending orders.
+
+4. Reorder Automation
+Reorder point = (average daily usage x supplier lead time) + safety stock. Usage comes from 30-day outbound transactions. The daily command calls ReorderService, groups items by supplier, skips products with open POs, and creates draft POs. Dry-run and duplicate checks reduce bad auto-orders.
+
+5. Task Scheduling
+The reorder command runs daily at 2:00 AM via Laravel Scheduler. On Windows, Task Scheduler runs schedule:run every minute. If it fails, log the error and notify admins. Laravel scheduling is easier than raw cron because it is versioned in code and supports timezone/overlap controls.
+
+6. Mailable and Queues
+Mailables are PHP classes that pass data to Blade email templates. PurchaseOrderCreated sends the order email with a PDF attachment. Queuing with QUEUE_CONNECTION=database and queue:work keeps requests fast. Admin-editable templates can be stored in the database.
+
+7. View Composers
+View composers bind data to views automatically. I used them in ViewServiceProvider for the four dashboard widgets. I eager-loaded relations, used direct counts, and added JSON APIs for AJAX refresh.
+
+8. Multi-module Dashboard Performance
+Keep each module in its own service/resource, eager-load relations, paginate tables, cache heavy aggregates, and refresh small widget data through API endpoints instead of reloading the whole page.
+
+9. GRN, Barcode, Supplier Portal
+Add goods_receipt_notes and goods_receipt_items tables linked to the PO and line items. Barcode scanning finds the product/SKU and increases received quantity. A supplier portal needs a supplier role, login, PO list, and acknowledge action.

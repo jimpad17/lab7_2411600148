@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\DashboardWidgetApiController;
 use App\Http\Controllers\Api\InventoryApiController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
@@ -14,4 +15,10 @@ Route::middleware(['web', 'auth', EnsureUserIsActive::class])->group(function ()
     Route::get('products/low-stock', [InventoryApiController::class, 'lowStock'])->name('api.products.low-stock');
     Route::get('products/{product}/stock', [InventoryApiController::class, 'productStock'])->name('api.products.stock')->whereNumber('product');
     Route::get('transactions/recent', [InventoryApiController::class, 'recentTransactions'])->name('api.transactions.recent');
+
+    /* Lab 7 - procurement widget payloads for AJAX refresh. */
+    Route::get('dashboard/pending-orders', [DashboardWidgetApiController::class, 'pendingOrders'])->name('api.dashboard.pending-orders');
+    Route::get('dashboard/recent-orders', [DashboardWidgetApiController::class, 'recentOrders'])->name('api.dashboard.recent-orders');
+    Route::get('dashboard/supplier-performance', [DashboardWidgetApiController::class, 'supplierPerformance'])->name('api.dashboard.supplier-performance');
+    Route::get('dashboard/reorder-alerts', [DashboardWidgetApiController::class, 'reorderAlerts'])->name('api.dashboard.reorder-alerts');
 });
